@@ -563,6 +563,42 @@ void set_default_settings()
 	settings->setDefault("touch_punch_gesture", "short_tap");
 	settings->setDefault("clickable_chat_weblinks", "true");
 
+#ifdef __vita__
+	// Conservative multiplayer baseline; measure changes on hardware.
+	settings->setDefault("video_driver", "ogles2");
+	settings->setDefault("screen_w", "960");
+	settings->setDefault("screen_h", "544");
+	settings->setDefault("fullscreen", "true");
+	settings->setDefault("autosave_screensize", "false");
+	settings->setDefault("fps_max", "30");
+	settings->setDefault("fps_max_unfocused", "10");
+	settings->setDefault("viewing_range", "48");
+	settings->setDefault("client_mapblock_limit", "1000");
+	settings->setDefault("client_unload_unused_data_timeout", "60");
+	settings->setDefault("mesh_generation_threads", "2");
+	settings->setDefault("performance_tradeoffs", "true");
+	settings->setDefault("enable_post_processing", "false");
+	settings->setDefault("enable_dynamic_shadows", "false");
+	settings->setDefault("antialiasing", "none");
+	settings->setDefault("leaves_style", "simple");
+	settings->setDefault("enable_3d_clouds", "false");
+	settings->setDefault("menu_clouds", "false");
+	settings->setDefault("joystick_inner_deadzone", "0.15");
+	settings->setDefault("joystick_frustum_sensitivity", "120");
+	settings->setDefault("enable_ipv6", "false");
+	settings->setDefault("touch_gui", "true");
+	settings->setDefault("touch_controls", "false");
+	settings->setDefault("maintab_LAST", "online");
+	settings->setDefault("keymap_dig", "GAMEPAD_BUTTON_10"); // R
+	settings->setDefault("keymap_place", "GAMEPAD_BUTTON_9"); // L
+	settings->setDefault("keymap_hotbar_previous", "GAMEPAD_BUTTON_13");
+	settings->setDefault("keymap_hotbar_next", "GAMEPAD_BUTTON_14");
+	settings->setDefault("keymap_chat", "GAMEPAD_BUTTON_4"); // Select
+	settings->setDefault("keymap_minimap", "");
+	settings->setDefault("keymap_freemove", "");
+	settings->setDefault("keymap_screenshot", "");
+#endif
+
 	// Altered settings for Android
 #ifdef __ANDROID__
 	settings->setDefault("screen_w", "0");

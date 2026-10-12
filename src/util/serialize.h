@@ -22,6 +22,8 @@
 	#include <machine/endian.h>
 #elif defined(__FreeBSD__) || defined(__DragonFly__)
 	#include <sys/endian.h>
+#elif defined(__vita__)
+#include <machine/endian.h>
 #elif HAVE_ENDIAN_H
 	#include <endian.h>
 #else

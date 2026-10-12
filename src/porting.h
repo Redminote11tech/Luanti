@@ -245,7 +245,9 @@ inline void preciseSleepUs(u64 sleep_time)
 inline const char *getPlatformName()
 {
 	return
-#if defined(ANDROID)
+#if defined(__vita__)
+	"Vita"
+#elif defined(ANDROID)
 	"Android"
 #elif defined(__linux__)
 	"Linux"

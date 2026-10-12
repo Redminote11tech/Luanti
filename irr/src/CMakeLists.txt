@@ -15,7 +15,12 @@ option(USE_SDL3_STATIC "Link with SDL3 static libraries" FALSE)
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	add_compile_definitions(_DEBUG)
 endif()
-set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+if(VITA)
+	# vita-elf-create cannot encode R_ARM_BASE_PREL / GOT relocations.
+	set(CMAKE_POSITION_INDEPENDENT_CODE FALSE)
+else()
+	set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -151,6 +156,15 @@ message(STATUS "OpenGL ES 2: ${ENABLE_GLES2}")
 #message(STATUS "WebGL: ${ENABLE_WEBGL1}")
 
 # Required libs
+
+# The Vita SDK ships static SDL. Its graphics backend needs additional
+# transitive shader-compiler archives, which must follow SDL in the link line.
+if(VITA)
+	find_package(SDL2 REQUIRED CONFIG)
+	set_property(TARGET SDL2::SDL2-static APPEND PROPERTY INTERFACE_LINK_LIBRARIES
+		"-Wl,--start-group" vitaGL vitashark SceShaccCgExt taihen_stub
+		SceShaccCg_stub "-Wl,--end-group")
+endif()
 
 find_package(ZLIB REQUIRED)
 find_package(JPEG REQUIRED)

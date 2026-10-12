@@ -334,7 +334,11 @@ bool PathExists(const std::string &path)
 
 bool IsPathAbsolute(const std::string &path)
 {
-	return path[0] == '/';
+#ifdef __vita__
+	return path.compare(0, 6, "app0:/") == 0 || path.compare(0, 5, "ux0:/") == 0;
+#else
+	return !path.empty() && path[0] == '/';
+#endif
 }
 
 bool IsDir(const std::string &path)
@@ -369,6 +373,18 @@ bool RecursiveDelete(const std::string &path)
 	if (!PathExists(path))
 		return true;
 
+#ifdef __vita__
+	// Vita has no shell or child processes. Delete files directly.
+	if (!IsDir(path))
+		return DeleteSingleFileOrEmptyDirectory(path);
+	for (const auto &entry : GetDirListing(path)) {
+		if (entry.name == "." || entry.name == "..")
+			continue;
+		if (!RecursiveDelete(path + DIR_DELIM + entry.name))
+			return false;
+	}
+	return DeleteSingleFileOrEmptyDirectory(path);
+#else
 	// Execute the 'rm' command directly, by fork() and execve()
 
 	infostream << "Removing \"" << path << "\"" << std::endl;
@@ -404,6 +420,7 @@ bool RecursiveDelete(const std::string &path)
 		while (tpid != child_pid);
 		return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 	}
+#endif
 }
 
 bool DeleteSingleFileOrEmptyDirectory(const std::string &path, bool log_error)
@@ -423,7 +440,7 @@ bool DeleteSingleFileOrEmptyDirectory(const std::string &path, bool log_error)
 
 std::string TempPath()
 {
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__vita__)
 	return porting::path_cache;
 #else
 	const char *env_tmpdir = getenv("TMPDIR");

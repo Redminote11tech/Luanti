@@ -110,9 +110,14 @@ local function init_globals()
 	local tv_main = tabview_create("maintab", {x = MAIN_TAB_W, y = MAIN_TAB_H}, {x = 0, y = 0})
 
 	tv_main:set_autosave_tab(true)
-	tv_main:add(tabs.local_game)
+	local is_vita = core.get_version().is_vita
+	if not is_vita then
+		tv_main:add(tabs.local_game)
+	end
 	tv_main:add(tabs.play_online)
-	tv_main:add(tabs.content)
+	if not is_vita then
+		tv_main:add(tabs.content)
+	end
 	tv_main:add(tabs.about)
 
 	tv_main:set_global_event_handler(main_event_handler)

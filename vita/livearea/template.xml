@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<livearea style="a1" format-ver="01.00" content-rev="1">
+  <livearea-background><image>bg.png</image></livearea-background>
+  <gate><startup-image>startup.png</startup-image></gate>
+  <frame id="frame1" multi="off" autoflip="off">
+    <liveitem><text><str color="#ffffff" size="28">Luanti Vita</str></text></liveitem>
+  </frame>
+</livearea>

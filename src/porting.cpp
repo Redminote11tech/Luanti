@@ -9,6 +9,10 @@
 */
 
 #include "porting.h"
+#ifdef __vita__
+#include "porting_vita.h"
+#include <psp2/kernel/rng.h>
+#endif
 
 #if defined(__FreeBSD__)  || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
 	#include <sys/types.h>
@@ -25,7 +29,7 @@
 #if !defined(_WIN32)
 	#include <unistd.h>
 	#include <sys/utsname.h>
-	#if !defined(__ANDROID__)
+	#if !defined(__ANDROID__) && !defined(__vita__)
 		#include <spawn.h>
 	#endif
 #endif
@@ -128,6 +132,7 @@ static void signal_handler(int sig)
 
 void signal_handler_init()
 {
+#ifndef __vita__
 	(void)signal(SIGINT, signal_handler);
 	(void)signal(SIGTERM, signal_handler);
 
@@ -138,6 +143,7 @@ void signal_handler_init()
 	 * to a closed pipe (see issue #17366) and there's nothing we can do about it...
 	 */
 	(void)signal(SIGPIPE, SIG_IGN);
+#endif
 }
 
 #else // _WIN32
@@ -238,7 +244,9 @@ std::string getDataPath(const char *subpath)
 
 static std::string detectSystemInfo()
 {
-#ifdef _WIN32
+#ifdef __vita__
+	return "PS Vita/ARMv7";
+#elif defined(_WIN32)
 	std::ostringstream oss;
 	char filePath[PATH_MAX];
 	UINT blockSize;
@@ -360,7 +368,12 @@ u32 getMemorySizeMB()
 }
 
 //// Windows
-#if defined(_WIN32)
+#if defined(__vita__)
+bool getCurrentExecPath(char *buf, size_t len)
+{
+	return strlcpy(buf, "app0:/eboot.bin", len) < len;
+}
+#elif defined(_WIN32)
 
 bool getCurrentExecPath(char *buf, size_t len)
 {
@@ -678,7 +691,13 @@ static void createCacheDirTag()
 
 void initializePaths()
 {
-#if RUN_IN_PLACE
+#ifdef __vita__
+	path_share = "app0:";
+	path_user = "ux0:/data/luanti";
+	path_cache = path_user + "/cache";
+	path_locale = "app0:/locale";
+	fs::CreateAllDirs(path_cache);
+#elif RUN_IN_PLACE
 	infostream << "Using relative paths (RUN_IN_PLACE)" << std::endl;
 
 	char buf[PATH_MAX];
@@ -790,7 +809,20 @@ void initializePaths()
 //// OS-specific Secure Random
 ////
 
-#ifdef WIN32
+#ifdef __vita__
+bool secure_rand_fill_buf(void *buf, size_t len)
+{
+	auto *out = static_cast<unsigned char *>(buf);
+	while (len) {
+		const size_t chunk = std::min<size_t>(len, 64);
+		if (sceKernelGetRandomNumber(out, chunk) < 0)
+			return false;
+		out += chunk;
+		len -= chunk;
+	}
+	return true;
+}
+#elif defined(WIN32)
 
 bool secure_rand_fill_buf(void *buf, size_t len)
 {
@@ -829,6 +861,9 @@ bool secure_rand_fill_buf(void *buf, size_t len)
 
 void osSpecificInit()
 {
+#ifdef __vita__
+	initVita();
+#endif
 #ifdef _WIN32
 	// hardening options
 	HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
@@ -946,6 +981,9 @@ static bool open_uri(const std::string &uri)
 	const char *argv[] = {"open", uri.c_str(), NULL};
 	return posix_spawnp(NULL, "open", NULL, NULL, (char**)argv,
 		(*_NSGetEnviron())) == 0;
+#elif defined(__vita__)
+	// A desktop process cannot be spawned on Vita. Keep the game running.
+	return false;
 #else
 	const char *argv[] = {"xdg-open", uri.c_str(), NULL};
 	return posix_spawnp(NULL, "xdg-open", NULL, NULL, (char**)argv, environ) == 0;

@@ -70,7 +70,13 @@
  * endian.h compatibility shim
  */
 
-#if defined(_WIN32)
+#if defined(__vita__)
+/* Vita is little-endian ARM; newlib has no BSD be32toh/htobe32 macros. */
+#undef be32toh
+#undef htobe32
+#define be32toh(x) __builtin_bswap32(x)
+#define htobe32(x) __builtin_bswap32(x)
+#elif defined(_WIN32)
 
 #define LITTLE_ENDIAN 1234
 #define BIG_ENDIAN 4321

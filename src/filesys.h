@@ -22,7 +22,12 @@
 // is very wrong. Different folders on the same filesystem can even have differing
 // case-sensitivity. This seems tough to handle correctly however.
 #define FILESYS_CASE_INSENSITIVE false
+#ifdef __vita__
+// ':' is part of a Vita mount name, e.g. ux0:/data.
+#define PATH_DELIM ";"
+#else
 #define PATH_DELIM ":"
+#endif
 #endif
 
 namespace io {

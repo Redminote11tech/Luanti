@@ -160,6 +160,14 @@ static IrrlichtDevice *createDevice(SIrrlichtCreationParameters params, std::opt
 RenderingEngine::RenderingEngine(MyEventReceiver *receiver)
 {
 	sanity_check(!s_singleton);
+#ifdef __vita__
+	// Do not enter vitaGL with an unavailable compiler: failed shaders can
+	// otherwise reach a driver path expecting valid compiled programs.
+	if (!fs::IsFile("ur0:/data/libshacccg.suprx") &&
+			!fs::IsFile("ur0:/data/external/libshacccg.suprx"))
+		throw BaseException("Vita shader compiler missing: install libshacccg.suprx "
+				"in ur0:data before launching Luanti. See vita/README.md.");
+#endif
 
 	// Resolution selection
 	bool fullscreen = g_settings->getBool("fullscreen");
@@ -428,6 +436,12 @@ const VideoDriverInfo &RenderingEngine::getVideoDriverInfo(video::E_DRIVER_TYPE 
 void RenderingEngine::showErrorMessageBox(const std::string &message)
 {
 	auto *device = s_singleton ? s_singleton->m_device : nullptr;
+#ifdef __vita__
+	// SDL's Vita dialog needs GXM. Startup errors are already logged by the
+	// caller; do not attempt a dialog before a renderer has been created.
+	if (!device)
+		return;
+#endif
 	::showErrorMessageBox(device, PROJECT_NAME_C, message.c_str());
 }
 

@@ -1,0 +1,95 @@
+{
+  "upstream": {
+    "url": "https://github.com/luanti-org/luanti.git",
+    "version": "5.17.0",
+    "commit": "c0e6812b1a4260bb25a1f606f70f55f4962bb97d"
+  },
+  "sdk": {
+    "url": "https://github.com/vitasdk/autobuilds/releases/download/master-linux-v2.540/vitasdk-x86_64-linux-gnu-2026-05-24_12-05-02.tar.bz2",
+    "sha256": "b1a8f4d6e41460c9ecf2c3c4590eb7eb3ea6b690767f508bd5696dbc77a4272e",
+    "version_info_sha256": "bcbb34e48698835d32010d400e9c0b22b9622df1b4fef3fc6a96567f0b358bdf"
+  },
+  "sdl2": {
+    "url": "https://github.com/libsdl-org/SDL/releases/download/release-2.32.8/SDL2-2.32.8.tar.gz",
+    "sha256": "0ca83e9c9b31e18288c7ec811108e58bac1f1bb5ec6577ad386830eac51c787e",
+    "patch_sha256": "dd120e63ae595ab184598adb54d6c6cd7f8fa2f9b8f5178356218d4b77d39de4",
+    "patch_source": "https://github.com/vitasdk/packages/blob/771ad4363f357f65d6ecedae9de920e17cb959de/sdl2_vitagl/vitagl-backend.patch"
+  },
+  "sqlite": {
+    "url": "https://github.com/sqlite/sqlite.git",
+    "commit": "8ed5e7365e6f12f427910188bbf6b254daad2ef6",
+    "version": "3.50.4"
+  },
+  "packages": [
+    {
+      "name": "freetype",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/freetype.tar.xz",
+      "sha256": "ad918e4075822109a61b9a19609ec0524d9b0fdc1878e5b74fc5c8cbc443f763"
+    },
+    {
+      "name": "libjpeg-turbo",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/libjpeg-turbo.tar.xz",
+      "sha256": "87511c384b36f944655e298140f24215f3da8b59821deddca0f6a9c5e3438b78"
+    },
+    {
+      "name": "libmathneon",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/libmathneon.tar.xz",
+      "sha256": "a27601332424dd1e1ba595102a1be9095176b592213d30fec37af3c3510248c0"
+    },
+    {
+      "name": "libogg",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/libogg.tar.xz",
+      "sha256": "59299c36b20a3d6628afd3b3a2d35a49216192400343dd04c16fb5b068b64388"
+    },
+    {
+      "name": "libpng",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/libpng.tar.xz",
+      "sha256": "e502fac413e17b75a06f8f2a88f87daec13d83a33e9206713a0612ee245b72b8"
+    },
+    {
+      "name": "libvorbis",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/libvorbis.tar.xz",
+      "sha256": "a6a7a609424d9b2a2bdcbefd56af68b2bc23d76a5e1f2d1c640868544280772a"
+    },
+    {
+      "name": "openal-soft",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/openal-soft.tar.xz",
+      "sha256": "c935b38cc024e6225e70d5db3bdbdeb7550b54757be78a570effbf8a3d98acc3"
+    },
+    {
+      "name": "SceShaccCgExt",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/SceShaccCgExt.tar.xz",
+      "sha256": "ded53f55e59a39b32cc1167d8a00f46b239e9844eb8a65870d3dba2f30fa88ba"
+    },
+    {
+      "name": "taihen",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/taihen.tar.xz",
+      "sha256": "afced213d9d308a665ef91809fd728614a92ec31b2fcf61cf1f6a3e98bec4014"
+    },
+    {
+      "name": "vitaGL",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/vitaGL.tar.xz",
+      "sha256": "752bd2974afbcaf471600acd5ca27e480522e3d9bd4f5628c76254ff2a8d8caa"
+    },
+    {
+      "name": "vitaShaRK",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/vitaShaRK.tar.xz",
+      "sha256": "704af0538cf0bd8b55af33b69e807e903589244460a6797fb85c7ac8553dfd30"
+    },
+    {
+      "name": "zlib",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/zlib.tar.xz",
+      "sha256": "f39cea16c176f93dc744597113f093db0d48adf23dd25a14ee0d2ec47df17fa6"
+    },
+    {
+      "name": "zstd",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/zstd.tar.xz",
+      "sha256": "b459390f8f6b6f5c7657d32d2681c82206b636133c4d277916e43270e0eec00b"
+    },
+    {
+      "name": "bzip2",
+      "url": "https://github.com/vitasdk/packages/releases/download/master/bzip2.tar.xz",
+      "sha256": "119c2cee26c1554dae4b8b61ddfa0f8e1a2456231154481ad34935f3de267973"
+    }
+  ]
+}

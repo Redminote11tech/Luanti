@@ -620,7 +620,9 @@ endif()
 # When cross-compiling place the executable in <build dir>/bin so that multiple
 # targets can be built from the same source folder. Otherwise, place it in
 # <source dir>/bin/ since Luanti can only run from there.
-if(CMAKE_CROSSCOMPILING)
+if(VITA)
+	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_CURRENT_BINARY_DIR}")
+elseif(CMAKE_CROSSCOMPILING)
 	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
 else()
 	set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
@@ -783,6 +785,9 @@ if(BUILD_CLIENT)
 
 	if(PRECOMPILE_HEADERS)
 		target_precompile_headers(${PROJECT_NAME} PRIVATE ${PRECOMPILED_HEADERS_LIST})
+	endif()
+	if(VITA)
+		include(${CMAKE_SOURCE_DIR}/vita/package.cmake)
 	endif()
 endif(BUILD_CLIENT)
 

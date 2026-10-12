@@ -561,6 +561,10 @@ int ModApiUtil::l_get_version(lua_State *L)
 
 	lua_pushboolean(L, DEVELOPMENT_BUILD);
 	lua_setfield(L, table, "is_dev");
+#ifdef __vita__
+	lua_pushboolean(L, true);
+	lua_setfield(L, table, "is_vita");
+#endif
 	return 1;
 }
 

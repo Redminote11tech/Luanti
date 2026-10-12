@@ -5,6 +5,10 @@ endif()
 
 # This can be read from ${PROJECT_NAME} after project() is called
 project(luanti)
+if(CMAKE_SYSTEM_NAME STREQUAL "Generic" AND DEFINED VITASDK)
+	set(VITA TRUE)
+	include(vita/options.cmake)
+endif()
 set(PROJECT_NAME_CAPITALIZED "Luanti")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -141,7 +145,13 @@ endif()
 
 # Installation
 
-if(WIN32)
+if(VITA)
+	set(SHAREDIR "app0:")
+	set(BINDIR ".")
+	set(DOCDIR "doc")
+	set(EXAMPLE_CONF_DIR "doc")
+	set(LOCALEDIR "locale")
+elseif(WIN32)
 	set(SHAREDIR ".")
 	set(BINDIR "bin")
 	set(DOCDIR "doc")

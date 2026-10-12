@@ -9,6 +9,7 @@
 #elif defined(__MACH__) && defined(__APPLE__)
 #include <mach/semaphore.h>
 #else
+#include <sys/types.h>
 #include <semaphore.h>
 #endif
 

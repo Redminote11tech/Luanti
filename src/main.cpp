@@ -137,7 +137,16 @@ int main(int argc, char *argv[])
 	g_logger.registerThread("Main");
 	g_logger.addOutputMaxLevel(&stderr_output, LL_ACTION);
 
+#ifdef __vita__
+	try {
+		porting::osSpecificInit();
+	} catch (const std::exception &error) {
+		errorstream << "Vita initialization failed: " << error.what() << std::endl;
+		return 1;
+	}
+#else
 	porting::osSpecificInit();
+#endif
 
 	int non_test_argc = get_non_test_argc(argc, argv);
 
@@ -668,7 +677,7 @@ namespace {
 
 static bool use_debugger(int argc, char *argv[])
 {
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__vita__)
 	return false;
 #else
 #ifdef _WIN32
