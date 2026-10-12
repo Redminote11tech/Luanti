@@ -72,7 +72,7 @@ timeout. Shadows, post-processing, anti-aliasing and 3D clouds default off.
 These are starting settings, **not measured performance guarantees**. Some
 server games and large texture packs can exceed the Vita's memory/CPU budget.
 
-The libc heap is 192 MiB within the application's 256 MiB memory budget, leaving
+The libc heap is 192 MiB within the normal game memory allocation, leaving
 space for thread stacks and native pools. A separate 4 MiB networking pool is
 allocated from that heap. CPU/bus/GPU clocks are 444/222/222 MHz using supported
 power APIs; no overclock plugin is required. Release builds and section garbage
@@ -80,6 +80,12 @@ collection remove unused binary sections. GLES2 is the only compiled graphics
 backend. Desktop process launching and shell-based deletion are replaced or
 excluded for Vita. Keeping shared engine source allows upstream fixes to be
 merged; deleting unused platform source would not reduce the VPK.
+
+The SELF must use the default zero memory-budget field (normal application
+mode). VitaSDK's `MEMSIZE`/`vita-make-fself -m` selects system-mode memory,
+not a game heap limit. The first package incorrectly requested `0x40000` there
+and a real Vita reported C1-2609-7 before startup. Package version 1.01 removes
+that request; the package validator rejects nonzero memory-mode fields.
 
 ## Rebuild
 
@@ -114,7 +120,8 @@ version metadata differs from the lock. LTO is disabled until Vita conversion
 and runtime compatibility are established. Position-independent desktop code
 is disabled because Vita's SELF converter cannot encode its GOT relocations.
 
-`validate_package.py` checks ZIP integrity, SELF/SFO headers, title identity,
+`validate_package.py` checks ZIP integrity, SELF/SFO headers, normal application
+memory-mode fields, title identity,
 required runtime assets, indexed PNG sizes and LiveArea image references.
 `test_crypto.py` compiles the actual Vita SHA-256 branch with a native compiler
 and compares standard, padding-boundary and long-input vectors to Python's

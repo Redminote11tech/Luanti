@@ -10,5 +10,7 @@ and sustained real Vita performance remain unverified.** The 30 FPS setting is
 a rendering cap, not a measured frame-rate claim.
 
 The device needs homebrew support and `ur0:data/libshacccg.suprx` installed.
+Version 1.01 removes an incorrect system-mode memory request from the executable,
+addressing the packaging fault associated with C1-2609-7 before startup.
 See [the Vita instructions](../vita/README.md) for controls, rebuilding,
 limitations, diagnostics and the hardware acceptance checklist.

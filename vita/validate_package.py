@@ -18,7 +18,25 @@ def validate(path):
                      "fonts/Arimo-Regular.ttf", "LICENSE.txt"):
             assert name in names, f"Missing {name}"
             assert len(vpk.read(name)) > 0, f"Empty {name}"
-        assert vpk.read("eboot.bin")[:4] == b"SCE\x00", "Invalid SELF header"
+        executable = vpk.read("eboot.bin")
+        assert executable[:4] == b"SCE\x00", "Invalid SELF header"
+        # VitaSDK SELF control-info 6 carries loader memory-mode settings.
+        # Nonzero total_memsize selects a system-mode budget, which can cause
+        # C1-2609-7 before main() and is invalid for this normal game build.
+        control_offset, control_size = struct.unpack_from("<QQ", executable, 0x68)
+        assert control_offset + control_size <= len(executable), "Invalid control-info bounds"
+        cursor, end, found_memory = control_offset, control_offset + control_size, False
+        while cursor < end:
+            kind, size = struct.unpack_from("<II", executable, cursor)
+            assert size >= 16 and cursor + size <= end, "Invalid control-info record"
+            if kind == 6:
+                assert size >= 32, "Truncated memory control-info"
+                _, attributes, physical, total = struct.unpack_from("<4I", executable, cursor + 16)
+                assert (attributes, physical, total) == (0, 0, 0), \
+                    "SELF requests system-mode memory; expected normal application mode"
+                found_memory = True
+            cursor += size
+        assert found_memory, "Missing memory control-info"
         sfo = vpk.read("sce_sys/param.sfo")
         assert sfo[:4] == b"\x00PSF", "Invalid SFO header"
         _, _, keys, values, count = struct.unpack_from("<5I", sfo)
