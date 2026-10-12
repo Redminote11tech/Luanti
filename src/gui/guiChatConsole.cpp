@@ -3,6 +3,9 @@
 // Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
 
 #include "guiChatConsole.h"
+#ifdef __vita__
+#include "porting_vita.h"
+#endif
 #include "chat.h"
 #include "client/client.h"
 #include "client/keycode.h"
@@ -101,6 +104,9 @@ void GUIChatConsole::openConsole(f32 scale)
 	assert(scale > 0.0f && scale <= 1.0f);
 
 	m_open = true;
+#ifdef __vita__
+	m_vita_keyboard_pending = true;
+#endif
 
 	m_desired_height_fraction = scale;
 	m_desired_height = scale * m_screensize.Y;
@@ -122,6 +128,11 @@ bool GUIChatConsole::isOpenInhibited() const
 
 void GUIChatConsole::closeConsole()
 {
+#ifdef __vita__
+	if (m_vita_keyboard_active)
+		porting::cancelVitaTextInput();
+	m_vita_keyboard_active = m_vita_keyboard_pending = false;
+#endif
 	m_open = false;
 	m_menumgr->deletingMenu(this);
 	m_scrollbar->setVisible(false);
@@ -170,6 +181,30 @@ void GUIChatConsole::draw()
 {
 	if(!IsVisible)
 		return;
+#ifdef __vita__
+	if (m_vita_keyboard_pending) {
+		m_vita_keyboard_pending = false;
+		m_vita_keyboard_active = porting::startVitaTextInput(
+			m_chat_backend->getPrompt().getLine(), false);
+	}
+	if (m_vita_keyboard_active) {
+		std::wstring text;
+		int result = porting::pollVitaTextInput(text);
+		if (result) {
+			m_vita_keyboard_active = false;
+			if (result > 0) {
+				m_chat_backend->getPrompt().replace(text);
+				SEvent enter{};
+				enter.EventType = EET_KEY_INPUT_EVENT;
+				enter.KeyInput.Key = KEY_RETURN;
+				enter.KeyInput.PressedDown = true;
+				OnEvent(enter);
+			} else {
+				closeConsoleAtOnce();
+			}
+		}
+	}
+#endif
 
 	video::IVideoDriver* driver = Environment->getVideoDriver();
 
@@ -416,6 +451,21 @@ void GUIChatConsole::drawPrompt()
 
 bool GUIChatConsole::OnEvent(const SEvent& event)
 {
+#ifdef __vita__
+	if (event.EventType == EET_GAMEPAD_BUTTON_EVENT) {
+		if (!m_vita_keyboard_active && event.GamepadButtonEvent.PressedDown) {
+			auto button = event.GamepadButtonEvent.Button;
+			if (button == GamepadButton::SOUTH || button == GamepadButton::BACK)
+				m_vita_keyboard_pending = true;
+			else if (button == GamepadButton::EAST || button == GamepadButton::START)
+				closeConsoleAtOnce();
+		}
+		return true;
+	}
+	if (m_vita_keyboard_active && (event.EventType == EET_TOUCH_INPUT_EVENT ||
+			event.EventType == EET_MOUSE_INPUT_EVENT || event.EventType == EET_GAMEPAD_AXIS_EVENT))
+		return true;
+#endif
 
 	ChatPrompt &prompt = m_chat_backend->getPrompt();
 

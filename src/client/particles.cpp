@@ -284,12 +284,20 @@ ParticleSpawner::ParticleSpawner(
 		m_texpool(std::move(texpool)),
 		m_attached_id(attached_id)
 {
+#ifdef __vita__
+	// Bound server-driven particle bursts on the handheld.
+	p.amount = std::min<u16>(p.amount, 512);
+#endif
 	m_spawntimes.reserve(p.amount + 1);
-	for (u16 i = 0; i <= p.amount; i++) {
+	for (u32 i = 0; i <= p.amount; i++) {
 		float spawntime = myrand_float() * p.time;
 		m_spawntimes.push_back(spawntime);
 	}
 
+#ifdef __vita__
+	// Avoid converting server-controlled lifetime estimates into allocations.
+	p_manager->reserveParticleSpace(1024);
+#else
 	size_t max_particles = 0; // maximum number of particles likely to be visible at any given time
 	assert(p.time >= 0);
 	if (p.time != 0) {
@@ -301,6 +309,7 @@ ParticleSpawner::ParticleSpawner(
 	}
 
 	p_manager->reserveParticleSpace(max_particles * 1.2);
+#endif
 }
 
 namespace {
@@ -506,14 +515,15 @@ void ParticleSpawner::spawnParticle(ClientEnvironment *env, float radius,
 		pp.size = r_size.pickWithin();
 
 	++m_active;
-	m_particlemanager->addParticle(std::make_unique<Particle>(
+	if (!m_particlemanager->addParticle(std::make_unique<Particle>(
 			pp,
 			texture,
 			texpos,
 			texsize,
 			color,
 			this
-		));
+		)))
+		--m_active;
 }
 
 void ParticleSpawner::step(float dtime, ClientEnvironment *env)
@@ -967,7 +977,12 @@ void ParticleManager::reserveParticleSpace(size_t max_estimate)
 {
 	MutexAutoLock lock(m_particle_list_lock);
 
+#ifdef __vita__
+	m_particles.reserve(std::min<size_t>(1024,
+		m_particles.size() + std::min<size_t>(max_estimate, 1024)));
+#else
 	m_particles.reserve(m_particles.size() + max_estimate);
+#endif
 }
 
 static void setBlendMode(video::SMaterial &material, BlendMode blendmode)
@@ -1041,6 +1056,10 @@ video::SMaterial ParticleManager::getMaterialForParticle(const Particle *particl
 bool ParticleManager::addParticle(std::unique_ptr<Particle> toadd)
 {
 	MutexAutoLock lock(m_particle_list_lock);
+#ifdef __vita__
+	if (m_particles.size() >= 1024)
+		return false;
+#endif
 
 	auto material = getMaterialForParticle(toadd.get());
 

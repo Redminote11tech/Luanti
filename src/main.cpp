@@ -23,6 +23,9 @@
 #include "config.h"
 #include "player.h"
 #include "porting.h"
+#ifdef __vita__
+#include "porting_vita.h"
+#endif
 #include "serialization.h" // SER_FMT_VER_HIGHEST_*
 #include "serverenvironment.h"
 #include "servermap.h"
@@ -225,6 +228,11 @@ int main(int argc, char *argv[])
 
 	if (!init_common(cmd_args, argc, argv))
 		return 1;
+#ifdef __vita__
+	if (cmd_args.getFlag("vita-selftest"))
+		return porting::vitaSelfTest(cmd_args.exists("vita-test-port") ?
+			cmd_args.getU16("vita-test-port") : 0);
+#endif
 
 	if (g_settings->getBool("enable_console"))
 		porting::attachOrCreateConsole();
@@ -272,7 +280,13 @@ int main(int argc, char *argv[])
 	}
 
 	GameParams game_params;
-#if !CHECK_CLIENT_BUILD()
+#ifdef __vita__
+	if (cmd_args.getFlag("server")) {
+		errorstream << "This Vita build does not support local or dedicated server hosting." << std::endl;
+		return 1;
+	}
+	game_params.is_dedicated_server = false;
+#elif !CHECK_CLIENT_BUILD()
 	porting::attachOrCreateConsole();
 	game_params.is_dedicated_server = true;
 #else
@@ -287,8 +301,10 @@ int main(int argc, char *argv[])
 
 	sanity_check(!game_params.world_path.empty());
 
+#ifndef __vita__
 	if (game_params.is_dedicated_server)
 		return run_dedicated_server(game_params, cmd_args) ? 0 : 1;
+#endif
 
 #if CHECK_CLIENT_BUILD()
 	retval = ClientLauncher().run(game_params, cmd_args) ? 0 : 1;
@@ -364,6 +380,12 @@ static void set_allowed_options(OptionList *allowed_options)
 {
 	assert(allowed_options);
 	allowed_options->clear();
+#ifdef __vita__
+	allowed_options->emplace("vita-selftest", ValueSpec(VALUETYPE_FLAG,
+		"Run headless Vita storage and network diagnostics"));
+	allowed_options->emplace("vita-test-port", ValueSpec(VALUETYPE_STRING,
+		"Loopback UDP echo port for Vita diagnostics"));
+#endif
 
 #if CHECK_CLIENT_BUILD()
 #define SERVER_ONLY " (requires --server flag)"

@@ -1,6 +1,7 @@
 include("${VITASDK}/share/vita.cmake" REQUIRED)
-target_sources(luanti PRIVATE "${CMAKE_SOURCE_DIR}/src/porting_vita.cpp")
-target_link_libraries(luanti SceNet_stub SceNetCtl_stub SceSysmodule_stub
+target_sources(luanti PRIVATE "${CMAKE_SOURCE_DIR}/src/porting_vita.cpp"
+	"${CMAKE_SOURCE_DIR}/src/vita_selftest.cpp")
+target_link_libraries(luanti SceIme_stub SceNet_stub SceNetCtl_stub SceSysmodule_stub
 	SceLibKernel_stub ScePower_stub SceAppMgr_stub bz2)
 # Leave the SELF memory budget at 0 (normal application mode). VitaSDK's
 # MEMSIZE/-m selects system-mode memory; it is not the normal game heap size.
@@ -21,4 +22,4 @@ foreach(resource builtin client/shaders textures/base/pack fonts)
 	endforeach()
 endforeach()
 vita_create_vpk(luanti-vita.vpk "LUANTI001" eboot.bin
-	VERSION "01.01" NAME "Luanti Vita" ${vita_assets})
+	VERSION "01.02" NAME "Luanti Vita" ${vita_assets})

@@ -13,8 +13,16 @@ The port now checks for the compiler before initializing the renderer.
 The packaged engine's `--version` path also ran in Vita3K and exited with code 0.
 The final missing-compiler test exits with code 1 and writes the specific
 dependency error to `startup.log`, without entering the graphics driver.
-**Playing on a server, controls, sound, suspend/resume and frame rate have
-not yet been verified on hardware. Do not treat this as a finished release.**
+Version 1.02 passes the packaged ARM engine's headless Vita3K diagnostics:
+12 gameplay button mappings and their releases, all four analog axes and neutral
+release, mounted SQLite transactions and persistence, kernel RNG, SRP-2048
+mutual authentication and rejection of a bad proof, a host UDP echo, and Luanti's
+reliable UDP handshake with 8 KiB fragmentation and two-way channels. Python
+independently confirms its SRP verifier. This tests the transport and login
+cryptography, not a complete authenticated session with a real game server.
+**Rendered server gameplay, physical menu/inventory/keyboard operation, sound,
+suspend/resume and frame rate remain unverified. Do not treat this as a finished
+release.** See [the review](REVIEW.md) for findings and evidence.
 
 ## Install on Vita
 
@@ -28,13 +36,15 @@ not yet been verified on hardware. Do not treat this as a finished release.**
    a Vita LiveArea background and launch image.
 4. Connect the Vita to Wi-Fi. Tap the multiplayer address, port, name and
    password fields, then join a server compatible with Luanti 5.17.
-   The Vita keyboard is supplied by SDL and the system IME dialog.
+   The app opens the native system keyboard when you select an editable field.
+   Existing text is preserved, password entry is masked, and cancel keeps the
+   original value. Accepting an edit does not automatically join a server.
 
 The first distribution supports direct server addresses and game-protocol
 media transfers. HTTPS server discovery, the content browser and updater are
 excluded. Keep certificate verification enabled if HTTPS support is added
-later. Local world hosting is hidden in the Vita menu and no standalone server
-is packaged. Server games/assets are downloaded on joining; no game is bundled.
+later. Local world hosting is hidden and rejected by the Vita client;
+the dedicated-server execution path is excluded. Server games/assets are downloaded on joining; no game is bundled.
 
 Data and configuration: `ux0:data/luanti/`. Keep this directory when upgrading.
 Diagnostics: `ux0:data/luanti/startup.log` and `debug.txt`. Do not share passwords
@@ -53,13 +63,27 @@ These use SDL's standard Vita gamepad mapping, not desktop keyboard emulation.
 | Cross | Jump |
 | Circle | Sneak |
 | Square | Auxiliary action |
-| Triangle | Inventory |
+| Triangle | Open / close inventory |
 | D-pad left / right | Previous / next hotbar slot |
 | D-pad up | Zoom |
 | D-pad down | Drop item |
 | Select | Chat |
 | Start | Pause / close menu |
 | Front touchscreen | Menus, inventory and text fields |
+
+In menus and inventory, the left stick or D-pad moves a visible pointer.
+Cross or R selects with a left click; hold it to drag. L performs a right
+click (split a stack or place one item). Square performs Shift+click for quick
+transfer through the formspec's inventory rings. Circle or Start goes back.
+Triangle closes in-game inventory/formspecs. Front touch remains available.
+Select opens chat and its native keyboard; accepting sends the message,
+including `/commands`. If chat remains open, Cross or Select opens the keyboard
+again and Circle or Start closes chat.
+
+These cover the essential gameplay and inventory actions. Desktop shortcuts
+for fly/fast/noclip, camera mode and debugging do not all have dedicated Vita
+buttons. Settings expose the supported movement options; server privileges
+still apply. Do not assume every desktop shortcut has a controller equivalent.
 
 Rear touch input is disabled to avoid accidental menu interaction. Native
 Vita analog sticks have no L3/R3 clicks; no required action uses them.
@@ -69,6 +93,9 @@ Vita analog sticks have no L3/R3 clicks; no required action uses them.
 The baseline caps rendering at 30 FPS, uses 960×544, a 48-node view range,
 two mesh workers, at most 1000 cached mapblocks, and a 60-second unused-block
 timeout. Shadows, post-processing, anti-aliasing and 3D clouds default off.
+Particle spawners are capped at 512 particles per burst/rate and 1024 active
+particles in total. Server effects may be reduced at these limits.
+The VPK is about 9% smaller than 1.01 after excluding hosting startup paths.
 These are starting settings, **not measured performance guarantees**. Some
 server games and large texture packs can exceed the Vita's memory/CPU budget.
 
@@ -87,6 +114,14 @@ not a game heap limit. The first package incorrectly requested `0x40000` there
 and a real Vita reported C1-2609-7 before startup. Package version 1.01 removes
 that request; the package validator rejects nonzero memory-mode fields.
 
+Version 1.02 also fixes Vita socket address lengths, explicitly rejects IPv6,
+and adapts SQLite mounted paths and locking. Queue waits use native Vita kernel
+semaphores; the previous adapter failed during the reliable UDP diagnostic. The SQLite build uses `unix-none`
+for this single-process multiplayer client with serialized database access.
+Do not share its database with another process or use this dependency build
+for local/standalone server hosting. It still uses real transactions, file I/O
+and synchronization; storage errors are not hidden by dummy syscalls.
+
 ## Rebuild
 
 Linux x86_64 host prerequisites: Python 3.12+, curl, git, native C/C++ compiler,
@@ -103,7 +138,16 @@ export LUANTI_VITA_CACHE=/workspace/downloads
 python3 vita/bootstrap.py
 bash vita/build.sh
 python3 vita/test_crypto.py
+python3 vita/test_text.py
 ```
+
+`python3 vita/test_emulator.py` runs opt-in diagnostics in the packaged ARM
+executable using the optional local runtime. It checks Unicode conversion,
+gameplay button presses/releases, analog direction changes, semaphore tokens, SQLite transactions
+and reopen, kernel randomness, SRP authentication, reliable UDP fragmentation
+and channels, plus a host UDP echo. Python independently checks the SRP verifier.
+It writes `ux0:data/luanti/vita-selftest.log`; no real account credentials are
+used. The diagnostic flag does not start graphics or connect to a public server.
 
 The optional emulator runtime prepared in this cloud workspace can run the
 startup smoke with `bash vita/emulator-smoke.sh --app-args=--version`.

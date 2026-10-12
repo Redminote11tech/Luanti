@@ -28,7 +28,7 @@ InputHandler::InputHandler()
 		g_settings->registerChangedCallback(name, &settingChangedCallback, this);
 }
 
-void MyEventReceiver::reloadKeybindings()
+void MyEventReceiver::reloadKeybindings(KeyPress escape_key)
 {
 	clearKeyCache();
 
@@ -43,7 +43,7 @@ void MyEventReceiver::reloadKeybindings()
 	keybindings[KeyType::PLACE] = getKeySetting("keymap_place");
 
 	keybindings[KeyType::ESC] = getKeySetting("keymap_pause");
-	keybindings[KeyType::ESC].keys.emplace_back(EscapeKey);
+	keybindings[KeyType::ESC].keys.emplace_back(escape_key);
 
 	keybindings[KeyType::AUTOFORWARD] = getKeySetting("keymap_autoforward");
 

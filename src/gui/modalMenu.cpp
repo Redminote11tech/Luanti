@@ -11,6 +11,9 @@
 #include "gui/guiInventoryList.h"
 #include "porting.h"
 #include "settings.h"
+#ifdef __vita__
+#include "porting_vita.h"
+#endif
 
 PointerAction PointerAction::fromEvent(const SEvent &event) {
 	switch (event.EventType) {
@@ -45,11 +48,18 @@ GUIModalMenu::GUIModalMenu(gui::IGUIEnvironment* env, gui::IGUIElement* parent,
 			RenderingEngine::getDisplayDensity();
 
 	setVisible(true);
+#ifdef __vita__
+	m_pointer = v2s32(480, 272);
+#endif
 	m_menumgr->createdMenu(this);
 }
 
 GUIModalMenu::~GUIModalMenu()
 {
+#ifdef __vita__
+	if (m_vita_edit)
+		porting::cancelVitaTextInput();
+#endif
 	m_menumgr->deletingMenu(this);
 }
 
@@ -67,6 +77,10 @@ void GUIModalMenu::draw()
 {
 	if (!IsVisible)
 		return;
+#ifdef __vita__
+	irr_ptr<GUIModalMenu> holder;
+	holder.grab(this);
+#endif
 
 	m_is_window_focused = RenderingEngine::get_raw_device()->isWindowFocused();
 
@@ -77,7 +91,19 @@ void GUIModalMenu::draw()
 		regenerateGui(screensize);
 	}
 
+#ifdef __vita__
+	updateVitaInput();
+	if (!IsVisible || !getParent())
+		return;
+#endif
 	drawMenu();
+#ifdef __vita__
+	if (m_vita_show_cursor && !m_vita_edit) {
+		video::SColor color(255, 255, 255, 255);
+		driver->draw2DLine(m_pointer - v2s32(7, 0), m_pointer + v2s32(7, 0), color);
+		driver->draw2DLine(m_pointer - v2s32(0, 7), m_pointer + v2s32(0, 7), color);
+	}
+#endif
 }
 
 /*
@@ -232,6 +258,10 @@ void GUIModalMenu::leave()
 
 bool GUIModalMenu::preprocessEvent(const SEvent &event)
 {
+#ifdef __vita__
+	if (preprocessVitaEvent(event))
+		return true;
+#endif
 #ifdef __ANDROID__
 	// display software keyboard when clicking edit boxes
 	if (event.EventType == EET_MOUSE_INPUT_EVENT &&
@@ -386,3 +416,154 @@ GUIModalMenu::ScalingInfo GUIModalMenu::getScalingInfo(v2u32 screensize, v2u32 b
 		screensize.Y / 2 + h / 2
 	)};
 }
+
+#ifdef __vita__
+void GUIModalMenu::setVisible(bool visible)
+{
+	IGUIElement::setVisible(visible);
+	m_vita_axis = v2f(0, 0);
+	std::fill(std::begin(m_vita_dpad), std::end(m_vita_dpad), false);
+	m_vita_buttons = 0;
+	m_vita_shift = false;
+	m_vita_last_frame = 0;
+	if (!visible && m_vita_edit) {
+		porting::cancelVitaTextInput();
+		m_vita_edit.reset();
+	}
+}
+
+void GUIModalMenu::updateVitaInput()
+{
+	const u64 now = porting::getTimeMs();
+	const float dt = m_vita_last_frame ? std::min(0.05f, (now - m_vita_last_frame) / 1000.f) : 0.f;
+	m_vita_last_frame = now;
+	if (m_vita_edit) {
+		std::wstring text;
+		int result = porting::pollVitaTextInput(text);
+		if (!result)
+			return;
+		auto edit = std::move(m_vita_edit);
+		// A server may replace a formspec while its keyboard is open.
+		if (result > 0 && isMyDescendant(edit.get())) {
+			edit->setText(text.c_str());
+			onVitaTextAccepted(edit.get());
+		}
+		return;
+	}
+	v2f direction = m_vita_axis;
+	direction.X += int(m_vita_dpad[3]) - int(m_vita_dpad[2]);
+	direction.Y += int(m_vita_dpad[1]) - int(m_vita_dpad[0]);
+	if (direction.getLengthSQ() == 0)
+		return;
+	m_vita_cursor += direction * (360.f * dt);
+	m_vita_cursor.X = std::clamp(m_vita_cursor.X, 0.f, float(m_screensize_old.X - 1));
+	m_vita_cursor.Y = std::clamp(m_vita_cursor.Y, 0.f, float(m_screensize_old.Y - 1));
+	m_pointer = v2s32(m_vita_cursor.X, m_vita_cursor.Y);
+	SEvent mouse{};
+	mouse.EventType = EET_MOUSE_INPUT_EVENT;
+	mouse.MouseInput.Event = EMIE_MOUSE_MOVED;
+	mouse.MouseInput.X = m_pointer.X;
+	mouse.MouseInput.Y = m_pointer.Y;
+	mouse.MouseInput.ButtonStates = m_vita_buttons;
+	mouse.MouseInput.Shift = m_vita_shift;
+	mouse.MouseInput.Simulated = true;
+	RenderingEngine::get_raw_device()->postEventFromUser(mouse);
+}
+
+bool GUIModalMenu::preprocessVitaEvent(const SEvent &event)
+{
+	if (m_vita_edit && (event.EventType == EET_GAMEPAD_BUTTON_EVENT ||
+			event.EventType == EET_GAMEPAD_AXIS_EVENT ||
+			event.EventType == EET_TOUCH_INPUT_EVENT ||
+			event.EventType == EET_MOUSE_INPUT_EVENT))
+		return true;
+	if (event.EventType == EET_MOUSE_INPUT_EVENT &&
+			event.MouseInput.Event == EMIE_LMOUSE_LEFT_UP) {
+		auto hovered = Environment->getRootGUIElement()->getElementFromPoint(
+			v2s32(event.MouseInput.X, event.MouseInput.Y));
+		if (hovered && hovered->getType() == gui::EGUIET_EDIT_BOX &&
+				isMyDescendant(hovered) && hovered->acceptsIME()) {
+			auto edit = static_cast<gui::IGUIEditBox *>(hovered);
+			if (!getNameByID(edit->getID()).empty() &&
+					porting::startVitaTextInput(edit->getText(), edit->isPasswordBox(),
+						edit->isMultiLineEnabled())) {
+				m_vita_edit.grab(edit);
+				m_vita_axis = v2f(0, 0);
+				std::fill(std::begin(m_vita_dpad), std::end(m_vita_dpad), false);
+				m_vita_buttons = 0;
+				m_vita_shift = false;
+				return true;
+			}
+		}
+	}
+	if (event.EventType == EET_TOUCH_INPUT_EVENT) {
+		m_vita_show_cursor = false;
+		m_vita_cursor = v2f(event.TouchInput.X, event.TouchInput.Y);
+	}
+	if (event.EventType == EET_GAMEPAD_AXIS_EVENT) {
+		auto axis = event.GamepadAxisEvent.Axis;
+		if (axis == GamepadAxis::LEFTX || axis == GamepadAxis::LEFTY) {
+			float value = event.GamepadAxisEvent.Value / 32768.f;
+			value = std::abs(value) < 0.15f ? 0.f : value;
+			(axis == GamepadAxis::LEFTX ? m_vita_axis.X : m_vita_axis.Y) = value;
+			m_vita_show_cursor = true;
+		}
+		return true;
+	}
+	if (event.EventType != EET_GAMEPAD_BUTTON_EVENT)
+		return false;
+	m_vita_show_cursor = true;
+	const auto button = event.GamepadButtonEvent.Button;
+	const bool pressed = event.GamepadButtonEvent.PressedDown;
+	if (button >= GamepadButton::DPAD_UP && button <= GamepadButton::DPAD_RIGHT) {
+		m_vita_dpad[int(button) - int(GamepadButton::DPAD_UP)] = pressed;
+		return true;
+	}
+	if (button == GamepadButton::EAST || button == GamepadButton::START) {
+		if (pressed) {
+			SEvent escape{};
+			escape.EventType = EET_KEY_INPUT_EVENT;
+			escape.KeyInput.Key = KEY_ESCAPE;
+			escape.KeyInput.PressedDown = true;
+			escape.KeyInput.SystemKeyCode = EscapeKey.getScancode();
+			OnEvent(escape);
+		}
+		return true;
+	}
+	if (button != GamepadButton::SOUTH && button != GamepadButton::WEST &&
+			button != GamepadButton::LEFT_SHOULDER && button != GamepadButton::RIGHT_SHOULDER)
+		return false;
+	const bool right = button == GamepadButton::LEFT_SHOULDER;
+	const u32 mask = SDL_BUTTON_MASK(right ? SDL_BUTTON_RIGHT : SDL_BUTTON_LEFT);
+	if (pressed)
+		m_vita_buttons |= mask;
+	else
+		m_vita_buttons &= ~mask;
+	m_vita_shift = button == GamepadButton::WEST;
+	SEvent mouse{};
+	mouse.EventType = EET_MOUSE_INPUT_EVENT;
+	mouse.MouseInput.Event = right ? (pressed ? EMIE_RMOUSE_PRESSED_DOWN : EMIE_RMOUSE_LEFT_UP) :
+		(pressed ? EMIE_LMOUSE_PRESSED_DOWN : EMIE_LMOUSE_LEFT_UP);
+	mouse.MouseInput.X = m_pointer.X;
+	mouse.MouseInput.Y = m_pointer.Y;
+	mouse.MouseInput.ButtonStates = m_vita_buttons;
+	mouse.MouseInput.Shift = m_vita_shift;
+	mouse.MouseInput.Simulated = true;
+	irr_ptr<GUIModalMenu> holder;
+	holder.grab(this);
+	RenderingEngine::get_raw_device()->postEventFromUser(mouse);
+	if (!pressed && button == GamepadButton::WEST)
+		m_vita_shift = false;
+	return true;
+}
+
+void GUIModalMenu::onVitaTextAccepted(gui::IGUIEditBox *edit)
+{
+	SEvent changed{};
+	changed.EventType = EET_GUI_EVENT;
+	changed.GUIEvent.Caller = edit;
+	changed.GUIEvent.EventType = gui::EGET_EDITBOX_CHANGED;
+	if (edit->getParent())
+		edit->getParent()->OnEvent(changed);
+}
+#endif

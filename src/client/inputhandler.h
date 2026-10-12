@@ -49,7 +49,8 @@ public:
 	// in the subsequent iteration of Game::processPlayerInteraction
 	bool WasKeyReleased(GameKeyType key) const { return keyWasReleased[key]; }
 
-	void reloadKeybindings();
+	// Explicit scancode permits controller diagnostics without a window.
+	void reloadKeybindings(KeyPress escape_key = EscapeKey);
 
 	s32 getMouseWheel()
 	{

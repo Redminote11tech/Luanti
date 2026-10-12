@@ -7,6 +7,13 @@
 #include <iostream>
 #include <cstdlib>
 #include <cassert>
+#ifdef __vita__
+#include <psp2/kernel/threadmgr/semaphore.h>
+#include <psp2/kernel/error.h>
+#include <stdexcept>
+#include <limits>
+#include <algorithm>
+#endif
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
@@ -42,6 +49,10 @@ Semaphore::Semaphore(int val)
 {
 #ifdef _WIN32
 	semaphore = CreateSemaphore(NULL, val, MAX_SEMAPHORE_COUNT, NULL);
+#elif defined(__vita__)
+	semaphore = sceKernelCreateSema("luanti", 0, val, 0x7fffffff, nullptr);
+	if (semaphore < 0)
+		throw std::runtime_error("Cannot create Vita semaphore");
 #else
 	int ret = sem_init(&semaphore, 0, val);
 	assert(!ret);
@@ -54,6 +65,8 @@ Semaphore::~Semaphore()
 {
 #ifdef _WIN32
 	CloseHandle(semaphore);
+#elif defined(__vita__)
+	sceKernelDeleteSema(semaphore);
 #else
 	int ret = sem_destroy(&semaphore);
 #ifdef __ANDROID__
@@ -72,6 +85,9 @@ void Semaphore::post(unsigned int num)
 	assert(num > 0);
 #ifdef _WIN32
 	ReleaseSemaphore(semaphore, num, NULL);
+#elif defined(__vita__)
+	if (sceKernelSignalSema(semaphore, num) < 0)
+		throw std::runtime_error("Cannot signal Vita semaphore");
 #else
 	for (unsigned i = 0; i < num; i++) {
 		int ret = sem_post(&semaphore);
@@ -86,6 +102,9 @@ void Semaphore::wait()
 {
 #ifdef _WIN32
 	WaitForSingleObject(semaphore, INFINITE);
+#elif defined(__vita__)
+	if (sceKernelWaitSema(semaphore, 1, nullptr) < 0)
+		throw std::runtime_error("Cannot wait for Vita semaphore");
 #else
 	int ret = sem_wait(&semaphore);
 	assert(!ret);
@@ -96,7 +115,20 @@ void Semaphore::wait()
 
 bool Semaphore::wait(unsigned int time_ms)
 {
-#ifdef _WIN32
+#ifdef __vita__
+	// Native relative timeouts avoid the POSIX adapter's absolute-time and
+	// cancellation bookkeeping. A timeout must never consume a queue item.
+	SceUInt timeout = std::min<uint64_t>(uint64_t(time_ms) * 1000,
+		std::numeric_limits<SceUInt>::max());
+	int ret = time_ms ? sceKernelWaitSema(semaphore, 1, &timeout) :
+		sceKernelPollSema(semaphore, 1);
+	if (ret == 0)
+		return true;
+	if (ret == static_cast<int>(SCE_KERNEL_ERROR_WAIT_TIMEOUT) ||
+			ret == static_cast<int>(SCE_KERNEL_ERROR_SEMA_ZERO))
+		return false;
+	throw std::runtime_error("Cannot wait for Vita semaphore: " + std::to_string(ret));
+#elif defined(_WIN32)
 	unsigned int ret = WaitForSingleObject(semaphore, time_ms);
 
 	if (ret == WAIT_OBJECT_0) {

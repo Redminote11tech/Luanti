@@ -67,6 +67,13 @@ UDPSocket::UDPSocket(bool ipv6)
 
 bool UDPSocket::init(bool ipv6, bool noExceptions)
 {
+#ifdef __vita__
+	if (ipv6) {
+		if (noExceptions)
+			return false;
+		throw SocketException("Vita supports IPv4 connections only");
+	}
+#endif
 	if (!g_sockets_initialized) {
 		verbosestream << "Sockets not initialized" << std::endl;
 		return false;
@@ -139,6 +146,9 @@ void UDPSocket::Bind(Address addr)
 		memset(&address, 0, sizeof(address));
 
 		address.sin6_family = AF_INET6;
+#ifdef __vita__
+		address.sin6_len = sizeof(address);
+#endif
 		address.sin6_addr = addr.getAddress6();
 		address.sin6_port = htons(addr.getPort());
 
@@ -149,6 +159,9 @@ void UDPSocket::Bind(Address addr)
 		memset(&address, 0, sizeof(address));
 
 		address.sin_family = AF_INET;
+#ifdef __vita__
+		address.sin_len = sizeof(address);
+#endif
 		address.sin_addr = addr.getAddress();
 		address.sin_port = htons(addr.getPort());
 
@@ -184,6 +197,9 @@ void UDPSocket::Send(const Address &destination, const void *data, int size)
 	if (m_addr_family == AF_INET6) {
 		struct sockaddr_in6 address = {};
 		address.sin6_family = AF_INET6;
+#ifdef __vita__
+		address.sin6_len = sizeof(address);
+#endif
 		address.sin6_addr = destination.getAddress6();
 		address.sin6_port = htons(destination.getPort());
 
@@ -192,6 +208,9 @@ void UDPSocket::Send(const Address &destination, const void *data, int size)
 	} else {
 		struct sockaddr_in address = {};
 		address.sin_family = AF_INET;
+#ifdef __vita__
+		address.sin_len = sizeof(address);
+#endif
 		address.sin_addr = destination.getAddress();
 		address.sin_port = htons(destination.getPort());
 

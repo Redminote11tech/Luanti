@@ -3588,6 +3588,23 @@ void GUIFormSpecMenu::legacySortElements(std::list<IGUIElement *>::iterator from
 	reorderChildren(from, to, elements);
 }
 
+#ifdef __vita__
+void GUIFormSpecMenu::onVitaTextAccepted(gui::IGUIEditBox *edit)
+{
+	const std::string name = getNameByID(edit->getID());
+	auto iter = field_enter_after_edit.find(name);
+	const bool enter_after = iter != field_enter_after_edit.end() && iter->second;
+	GUIModalMenu::onVitaTextAccepted(edit);
+	if (enter_after && isMyDescendant(edit) && edit->getParent()) {
+		SEvent enter{};
+		enter.EventType = EET_GUI_EVENT;
+		enter.GUIEvent.Caller = edit;
+		enter.GUIEvent.EventType = gui::EGET_EDITBOX_ENTER;
+		edit->getParent()->OnEvent(enter);
+	}
+}
+#endif
+
 #ifdef __ANDROID__
 void GUIFormSpecMenu::getAndroidUIInput()
 {
@@ -4584,7 +4601,9 @@ bool GUIFormSpecMenu::OnEvent(const SEvent& event)
 		}
 
 	}
-	if (auto kpe = KeyPressEvent(event); kpe && kpe.isPressed() && keySettingHasMatch("keymap_pause", kpe.key)) {
+	if (auto kpe = KeyPressEvent(event); kpe && kpe.isPressed() &&
+			(keySettingHasMatch("keymap_pause", kpe.key) ||
+			(m_client && keySettingHasMatch("keymap_inventory", kpe.key)))) {
 		tryClose();
 		return true;
 	}

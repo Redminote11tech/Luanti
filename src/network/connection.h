@@ -8,10 +8,10 @@
 #include "socket.h" // Address
 
 class NetworkPacket;
-class PeerHandler;
 
 namespace con
 {
+class PeerHandler;
 
 enum rtt_stat_type : int {
 	MIN_RTT,

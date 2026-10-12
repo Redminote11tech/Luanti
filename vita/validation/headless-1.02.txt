@@ -1,0 +1,14 @@
+PASS UTF-16 keyboard roundtrip and surrogate boundary
+PASS 12 gameplay button mappings, presses and releases
+PASS four analog axes, direction reversal and neutral release
+PASS mounted SQLite transaction, binary value, reopen and delete
+PASS kernel random source
+SRP verifier SHA256 3d7fc61cace6b02a9043eeb8f9fb9fb33965d7e088ddcff114d26e78c58311e8
+PASS SRP-2048 mutual authentication, matching session keys and invalid-proof rejection
+PASS IPv6 rejection
+PASS semaphore poll, repeated timeout and token accounting
+PASS numeric resolution, host UDP bind/send/receive and poll timeout
+PASS reliable UDP handshake, 8 KiB fragmentation and bidirectional channels
+PASS all requested diagnostics
+PASS Vita SRP verifier matches independent Python SHA-256/modular arithmetic
+PASS emulator exited successfully; host confirmed exact UDP payload

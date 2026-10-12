@@ -1,16 +1,22 @@
 # Luanti Vita development package
 
-`luanti-vita-dev.vpk` is the development build of the Vita port based on Luanti
-5.17.0. Install it using VitaShell. `SHA256SUMS` records its SHA-256 checksum.
+`luanti-vita-dev.vpk` is version 1.02 of the multiplayer Vita port, based on
+Luanti 5.17.0. Install it using VitaShell. `SHA256SUMS` records its checksum.
 
-The ARM build, package structure and 13 crypto vectors passed. Vita3K ran the
-engine's `--version` path and exited with code 0. The emulator lacks the shader
-compiler required for graphics testing. **Multiplayer gameplay, controls, sound
-and sustained real Vita performance remain unverified.** The 30 FPS setting is
-a rendering cap, not a measured frame-rate claim.
+The ARM build, package validation, 13 SHA-256 vectors and Unicode boundary tests
+pass. The packaged engine also passes Vita3K diagnostics for controller mappings,
+analog axes, SQLite persistence, kernel RNG, SRP mutual authentication, kernel
+semaphores, host UDP echo and reliable UDP fragmentation. Python independently
+checks the SRP verifier. This verifies transport and crypto components;
+**a complete rendered server session and physical controls are not yet verified**.
+The emulator lacks the shader compiler required for graphics testing. Sound,
+suspend/resume and sustained real Vita performance also remain unverified.
+The 30 FPS setting is a cap, not a measured frame rate.
 
 The device needs homebrew support and `ur0:data/libshacccg.suprx` installed.
-Version 1.01 removes an incorrect system-mode memory request from the executable,
-addressing the packaging fault associated with C1-2609-7 before startup.
-See [the Vita instructions](../vita/README.md) for controls, rebuilding,
-limitations, diagnostics and the hardware acceptance checklist.
+1.01 corrected the SELF memory-mode request associated with the pre-startup
+C1-2609-7 error. 1.02 fixes sockets and storage, adds native text editing and
+menu/inventory controller controls, bounds particles and excludes hosting paths.
+
+See [controls and installation](../vita/README.md) and
+[the code review and validation results](../vita/REVIEW.md).

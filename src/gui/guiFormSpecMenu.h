@@ -321,6 +321,9 @@ public:
 	static double getImgsize(v2u32 avail_screensize, double screen_dpi, double gui_scaling);
 
 protected:
+#ifdef __vita__
+	void onVitaTextAccepted(gui::IGUIEditBox *edit) override;
+#endif
 	bool remapClickOutside(const SEvent &event) override;
 
 	v2s32 getBasePos() const

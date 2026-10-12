@@ -7,6 +7,9 @@
 #include "IGUIElement.h"
 #include "irrlichttypes_bloated.h"
 #include "irr_ptr.h"
+#ifdef __vita__
+#include <IGUIEditBox.h>
+#endif
 
 #ifdef __ANDROID__
 	#include <porting_android.h>
@@ -43,6 +46,9 @@ public:
 	void allowFocusRemoval(bool allow);
 	bool canTakeFocus(gui::IGUIElement *e);
 	void draw();
+#ifdef __vita__
+	void setVisible(bool visible) override;
+#endif
 	void quitMenu();
 
 	virtual void regenerateGui(v2u32 screensize) = 0;
@@ -56,6 +62,9 @@ public:
 #endif
 
 protected:
+#ifdef __vita__
+	virtual void onVitaTextAccepted(gui::IGUIEditBox *edit);
+#endif
 	virtual std::wstring getLabelByID(s32 id) = 0;
 	virtual std::string getNameByID(s32 id) = 0;
 
@@ -83,6 +92,18 @@ protected:
 	virtual bool remapClickOutside(const SEvent &event);
 
 private:
+#ifdef __vita__
+	irr_ptr<gui::IGUIEditBox> m_vita_edit;
+	v2f m_vita_cursor{480, 272};
+	v2f m_vita_axis{0, 0};
+	bool m_vita_dpad[4]{};
+	u32 m_vita_buttons = 0;
+	bool m_vita_shift = false;
+	bool m_vita_show_cursor = false;
+	u64 m_vita_last_frame = 0;
+	void updateVitaInput();
+	bool preprocessVitaEvent(const SEvent &event);
+#endif
 	IMenuManager *m_menumgr;
 	bool m_is_window_focused = false;
 	/* If true, remap a click outside the formspec to ESC. This is so that, for

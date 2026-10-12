@@ -362,6 +362,11 @@ SDL_Gamepad *CIrrDeviceSDL::getRecentGamepad() const
 
 void CIrrDeviceSDL::resetReceiveTextInputEvents()
 {
+#ifdef __vita__
+	// The app owns the asynchronous native dialog and replaces the full field.
+	// SDL's Vita backend only inserts text and cannot preserve/cancel edits.
+	return;
+#endif
 	gui::IGUIElement *elem = GUIEnvironment->getFocus();
 	if (elem && elem->acceptsIME()) {
 		// IBus seems to have an issue where dead keys and compose keys do not

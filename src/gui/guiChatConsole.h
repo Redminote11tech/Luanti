@@ -60,6 +60,10 @@ public:
 	virtual bool acceptsIME() { return true; }
 
 private:
+#ifdef __vita__
+	bool m_vita_keyboard_pending = false;
+	bool m_vita_keyboard_active = false;
+#endif
 	void reformatConsole();
 	void recalculateConsolePosition();
 

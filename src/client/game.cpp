@@ -747,6 +747,10 @@ bool Game::initSound()
 bool Game::createServer(const std::string &map_dir,
 		const SubgameSpec &gamespec, u16 port)
 {
+#ifdef __vita__
+	errordata->setError(gettext("This Vita build supports multiplayer servers only. Enter a server address."));
+	return false;
+#else
 	showOverlayMessage(N_("Creating server..."), 0, 5);
 
 	std::string bind_str;
@@ -804,6 +808,7 @@ bool Game::createServer(const std::string &map_dir,
 	start_thread->rethrow();
 
 	return success;
+#endif
 }
 
 void Game::copyServerClientCache()

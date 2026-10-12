@@ -12,6 +12,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tarfile
+from sqlite_patch import patch as patch_sqlite, FLAGS as sqlite_flags
 
 root = Path(__file__).resolve().parent.parent
 lock = json.loads((root / "vita/dependencies.lock.json").read_text())
@@ -111,13 +112,10 @@ if not (sqlite_build / "Makefile").exists():
 run(["make", "-j" + jobs, "sqlite3.c"], cwd=sqlite_build)
 source = (sqlite_build / "sqlite3.c").read_text()
 # Supported SQLite feature exclusions for Vita's newlib. No dummy syscalls.
-source = source.replace("#include <sys/ioctl.h>", "#ifndef __vita__\n#include <sys/ioctl.h>\n#endif")
-source = source.replace("#define HAVE_FCHOWN 1", "#undef HAVE_FCHOWN")
-source = source.replace("#define HAVE_READLINK 1", "#undef HAVE_READLINK")
+source = patch_sqlite(source)
 vita_source = sqlite_build / "sqlite3-vita.c"
 vita_source.write_text(source)
-flags = ["-O2", "-DSQLITE_THREADSAFE=1", "-DSQLITE_OMIT_LOAD_EXTENSION",
-         "-DSQLITE_DISABLE_LFS", "-DSQLITE_OMIT_WAL", "-DSQLITE_MAX_MMAP_SIZE=0"]
+flags = sqlite_flags
 run([sdk / "bin/arm-vita-eabi-gcc", *flags, "-c", vita_source, "-o", sqlite_build / "sqlite3-vita.o"])
 run([sdk / "bin/arm-vita-eabi-ar", "rcs", sdk / "arm-vita-eabi/lib/libsqlite3.a", sqlite_build / "sqlite3-vita.o"])
 shutil.copy2(sqlite_build / "sqlite3.h", sdk / "arm-vita-eabi/include/sqlite3.h")
